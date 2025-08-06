@@ -4,6 +4,16 @@ const eventLogsConfig = require('./config/event-logs');
 class DashboardGenerator {
   constructor() {
     this.data = null;
+    // Get timezone from environment variable, default to UTC
+    this.timezone = process.env.DISPLAY_TIMEZONE || 'UTC';
+    
+    // Validate timezone
+    try {
+      new Date().toLocaleString('en-US', { timeZone: this.timezone });
+    } catch (error) {
+      console.warn(`⚠️  Invalid timezone "${this.timezone}", falling back to UTC`);
+      this.timezone = 'UTC';
+    }
   }
 
   loadData(data) {
@@ -19,7 +29,7 @@ class DashboardGenerator {
   formatTimestamp(isoString) {
     const date = new Date(isoString);
     return date.toLocaleString('en-US', {
-      timeZone: 'UTC',
+      timeZone: this.timezone,
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -32,6 +42,7 @@ class DashboardGenerator {
   formatEventTimestamp(isoString) {
     const date = new Date(isoString);
     return date.toLocaleString('en-US', {
+      timeZone: this.timezone,
       month: 'short',
       day: 'numeric',
       hour: '2-digit',

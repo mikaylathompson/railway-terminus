@@ -32,6 +32,10 @@ RAILWAY_TOKEN=your-railway-api-token
 
 # Optional: Default environment ID for event logs
 RAILWAY_ENVIRONMENT_ID=your-environment-id
+
+# Optional: Display timezone for all timestamps (default: UTC)
+# Examples: America/New_York, Europe/London, Asia/Tokyo, etc.
+DISPLAY_TIMEZONE=UTC
 ```
 
 ### Local Development
@@ -47,6 +51,7 @@ npm install
 export TERMINUS_AUTH_TOKEN=your-token
 export RAILWAY_TOKEN=your-railway-token
 export RAILWAY_ENVIRONMENT_ID=your-env-id
+export DISPLAY_TIMEZONE=America/New_York  # Optional: your preferred timezone
 ```
 
 3. Start the development server:
@@ -92,6 +97,8 @@ Returns the main dashboard HTML.
 - `X-Lookback-Hours`: Event log lookback period (default: 24)
 - `X-Project-ID`: Filter by project ID (future use)
 - `X-Service-ID`: Filter by service ID (future use)
+
+**Note:** All timestamps are displayed in the timezone specified by the `DISPLAY_TIMEZONE` environment variable (defaults to UTC).
 
 #### `GET /debug` - Debug Queries
 Runs diagnostic queries and returns results as JSON.
