@@ -1,23 +1,43 @@
-query volume_sizes_simple {
+query volumeUsage {
   me {
     workspaces {
       name
+      id
       team {
         id
+        name
         projects {
           edges {
             node {
+              id
               name
               environments {
                 edges {
                   node {
+                    id
                     name
                     volumeInstances {
                       edges {
                         node {
+                          id
                           currentSizeMB
                           sizeMB
                           mountPath
+                          region
+                          state
+                          type
+                          createdAt
+                          environmentId
+                          serviceId
+                          volumeId
+                          service {
+                            id
+                            name
+                          }
+                          volume {
+                            id
+                            name
+                          }
                         }
                       }
                     }
@@ -30,4 +50,4 @@ query volume_sizes_simple {
       }
     }
   }
-} 
+}

@@ -5,7 +5,7 @@ A Railway-hosted dashboard for monitoring Railway services, volumes, and event l
 ## Features
 
 - **Real-time Dashboard**: Visual overview of services, deployments, and volumes
-- **Event Logs**: Recent activity logs with configurable lookback periods
+- **Event Logs**: Recent activity logs with configurable filter and data extraction
 - **API Access**: JSON endpoints for programmatic access
 - **Authentication**: Bearer token authentication for security
 - **Parameterization**: Customizable via HTTP headers
@@ -93,10 +93,21 @@ Authorization: Bearer your-token-here
 Returns the main dashboard HTML.
 
 **Headers:**
-- `X-Environment-ID`: Override default environment ID
-- `X-Lookback-Hours`: Event log lookback period (default: 24)
-- `X-Project-ID`: Filter by project ID (future use)
-- `X-Service-ID`: Filter by service ID (future use)
+- `X-Logs-Environment-ID`: Environment ID for event logs only (preferred)
+- `X-Terminus-Logs-Env-ID`: Environment ID for event logs only (legacy)
+- `X-Project-ID`: Filter all data by specific project ID
+- `X-Service-ID`: Filter all data by specific service ID
+- `X-Environment-ID`: Filter all data by specific environment ID
+
+**Filtering:**
+When filtering headers are provided, the dashboard will show only data for the specified resources:
+
+- **Project Filter (`X-Project-ID`)**: Shows only deployments, volumes, and services for the specified project
+- **Service Filter (`X-Service-ID`)**: Shows only deployments for the specified service (must be within the filtered project if both are specified)  
+- **Environment Filter (`X-Environment-ID`)**: Shows only deployments and volumes for the specified environment
+- **Event Logs (`X-Terminus-Logs-Env-ID`)**: Enables event logs for the specified environment (separate from filtering)
+
+Filters can be combined. For example, providing both `X-Project-ID` and `X-Service-ID` will show only deployments for that specific service within that project.
 
 **Note:** All timestamps are displayed in the timezone specified by the `DISPLAY_TIMEZONE` environment variable (defaults to UTC).
 
@@ -119,11 +130,10 @@ curl -H "Authorization: Bearer your-token" \
      http://localhost:3000/
 ```
 
-### Custom Environment and Lookback
+### Custom Environment
 ```bash
 curl -H "Authorization: Bearer your-token" \
      -H "X-Environment-ID: env_abc123" \
-     -H "X-Lookback-Hours: 48" \
      http://localhost:3000/
 ```
 

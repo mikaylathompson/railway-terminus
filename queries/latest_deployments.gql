@@ -1,11 +1,15 @@
-query LatestDeployments($first: Int!) {
+query latestDeployments($first: Int! = 4) {
   me {
     workspaces {
       name
+      id
       team {
+        id
+        name
         projects {
           edges {
             node {
+              id
               name
               services {
                 edges {
@@ -18,9 +22,19 @@ query LatestDeployments($first: Int!) {
                           id
                           status
                           createdAt
+                          updatedAt
+                          staticUrl
+                          url
+                          canRedeploy
+                          canRollback
+                          projectId
+                          serviceId
+                          environmentId
                           environment {
+                            id
                             name
                           }
+                          meta
                         }
                       }
                     }
@@ -33,4 +47,4 @@ query LatestDeployments($first: Int!) {
       }
     }
   }
-} 
+}

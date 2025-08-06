@@ -1,34 +1,41 @@
-query volume_sizes {
+query projectsServicesEnvironments {
   me {
     workspaces {
       name
+      id
       team {
         id
+        name
         projects {
           edges {
             node {
+              id
               name
+              description
+              createdAt
+              updatedAt
+              teamId
               services {
                 edges {
                   node {
+                    id
                     name
+                    createdAt
+                    updatedAt
+                    projectId
+                    icon
                   }
                 }
               }
               environments {
                 edges {
                   node {
+                    id
                     name
-                    volumeInstances {
-                      edges {
-                        node {
-                          currentSizeMB
-                          sizeMB
-                          mountPath
-                          region
-                        }
-                      }
-                    }
+                    createdAt
+                    updatedAt
+                    projectId
+                    isEphemeral
                   }
                 }
               }
@@ -38,4 +45,4 @@ query volume_sizes {
       }
     }
   }
-} 
+}

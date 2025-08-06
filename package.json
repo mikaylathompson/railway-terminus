@@ -9,7 +9,8 @@
     "test": "node test-local.js",
     "test-api": "node test-railway-api.js",
     "test-dashboard": "node test-dashboard.js",
-    "test-exact": "node test-exact-queries.js"
+    "test-exact": "node test-exact-queries.js",
+    "test:comprehensive": "node test-comprehensive.js"
   },
   "dependencies": {
     "express": "^4.18.2",

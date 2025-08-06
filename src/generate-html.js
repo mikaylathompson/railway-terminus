@@ -98,54 +98,148 @@ class DashboardGenerator {
       .replace(/'/g, '&#39;');
   }
 
-  extractProjectData() {
+  extractComprehensiveData() {
     if (!this.data.success) {
-      return { services: [], volumes: [], eventLogs: [] };
+      return { workspaces: [], volumes: [], eventLogs: [], hasFilters: false };
     }
 
-    const services = [];
+    const workspaces = [];
     const volumes = [];
     let eventLogs = [];
 
-    // Extract services and deployments
-    const deploymentWorkspaces = this.data.data.deployments.me.workspaces;
-    for (const workspace of deploymentWorkspaces) {
-      if (workspace.team && workspace.team.projects) {
+    // Check if filters are applied
+    const hasFilters = this.data.data.queryInfo?.filters?.projectId || 
+                      this.data.data.queryInfo?.filters?.serviceId || 
+                      this.data.data.queryInfo?.filters?.environmentId;
+
+    // Get deployments mapped by service and environment for quick lookup
+    const deploymentMap = new Map();
+    if (this.data.data.deployments?.me?.workspaces) {
+      for (const workspace of this.data.data.deployments.me.workspaces) {
+        if (workspace.team?.projects?.edges) {
         for (const projectEdge of workspace.team.projects.edges) {
           const project = projectEdge.node;
-          if (project.services) {
+            if (project.services?.edges) {
             for (const serviceEdge of project.services.edges) {
               const service = serviceEdge.node;
-              services.push({
-                workspaceName: workspace.name,
-                projectName: project.name,
-                serviceName: service.name,
-                serviceId: service.id,
-                deployment: service.deployments.edges.length > 0 ? service.deployments.edges[0].node : null
-              });
+                if (service.deployments?.edges) {
+                  for (const deploymentEdge of service.deployments.edges) {
+                    const deployment = deploymentEdge.node;
+                    const key = `${service.id}-${deployment.environmentId}`;
+                    if (!deploymentMap.has(key) || 
+                        new Date(deployment.createdAt) > new Date(deploymentMap.get(key).createdAt)) {
+                      deploymentMap.set(key, deployment);
+                    }
+                  }
+                }
+              }
             }
           }
         }
       }
     }
 
-    // Extract volume data
-    const volumeWorkspaces = this.data.data.volumes.me.workspaces;
-    for (const workspace of volumeWorkspaces) {
-      if (workspace.team && workspace.team.projects) {
+    // Process projects data to create nested structure
+    if (this.data.data.projects?.me?.workspaces) {
+      for (const workspace of this.data.data.projects.me.workspaces) {
+        const workspaceData = {
+          name: workspace.name,
+          id: workspace.id,
+          projects: []
+        };
+
+        if (workspace.team?.projects?.edges) {
+          for (const projectEdge of workspace.team.projects.edges) {
+            const project = projectEdge.node;
+            const projectData = {
+              id: project.id,
+              name: project.name,
+              description: project.description,
+              teamId: project.teamId,
+              createdAt: project.createdAt,
+              services: [],
+              environments: []
+            };
+
+            // Add services with their deployments
+            if (project.services?.edges) {
+              for (const serviceEdge of project.services.edges) {
+                const service = serviceEdge.node;
+                const serviceData = {
+                  id: service.id,
+                  name: service.name,
+                  icon: service.icon,
+                  createdAt: service.createdAt,
+                  deployments: []
+                };
+
+                // Add deployments for each environment
+                if (project.environments?.edges) {
+                  for (const envEdge of project.environments.edges) {
+                    const env = envEdge.node;
+                    const deploymentKey = `${service.id}-${env.id}`;
+                    const deployment = deploymentMap.get(deploymentKey);
+                    
+                    if (deployment) {
+                      serviceData.deployments.push({
+                        ...deployment,
+                        environmentName: env.name,
+                        environmentId: env.id
+                      });
+                    }
+                  }
+                }
+
+                projectData.services.push(serviceData);
+              }
+            }
+
+            // Add environments
+            if (project.environments?.edges) {
+              for (const envEdge of project.environments.edges) {
+                const env = envEdge.node;
+                projectData.environments.push({
+                  id: env.id,
+                  name: env.name,
+                  isEphemeral: env.isEphemeral,
+                  createdAt: env.createdAt
+                });
+              }
+            }
+
+            workspaceData.projects.push(projectData);
+          }
+        }
+
+        workspaces.push(workspaceData);
+      }
+    }
+
+    // Extract compact volume data
+    if (this.data.data.volumes?.me?.workspaces) {
+      for (const workspace of this.data.data.volumes.me.workspaces) {
+        if (workspace.team?.projects?.edges) {
         for (const projectEdge of workspace.team.projects.edges) {
           const project = projectEdge.node;
-          if (project.environments) {
+            if (project.environments?.edges) {
             for (const envEdge of project.environments.edges) {
               const env = envEdge.node;
-              if (env.volumeInstances && env.volumeInstances.edges.length > 0) {
+                if (env.volumeInstances?.edges) {
                 for (const volumeEdge of env.volumeInstances.edges) {
+                    const volume = volumeEdge.node;
                   volumes.push({
-                    workspaceName: workspace.name,
+                      id: volume.id,
+                      mountPath: volume.mountPath,
+                      currentSizeMB: volume.currentSizeMB,
+                      sizeMB: volume.sizeMB,
+                      region: volume.region,
+                      state: volume.state,
+                      serviceName: volume.service?.name || 'Unknown Service',
+                      environmentName: env.name,
                     projectName: project.name,
-                    environmentName: env.name,
-                    ...volumeEdge.node
+                      workspaceName: workspace.name
                   });
+                  }
                 }
               }
             }
@@ -166,7 +260,7 @@ class DashboardGenerator {
       eventLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
 
-    return { services, volumes, eventLogs };
+    return { workspaces, volumes, eventLogs, hasFilters };
   }
 
   generateErrorHTML() {
@@ -232,262 +326,332 @@ class DashboardGenerator {
 </html>`;
   }
 
-  generateSuccessHTML(services, volumes, eventLogs) {
-    const workspaceName = services.length > 0 ? services[0].workspaceName : 'Unknown';
-    const projectName = services.length > 0 ? services[0].projectName : 'Unknown';
+  generateComprehensiveHTML(workspaces, volumes, eventLogs, hasFilters) {
+    // Helper function to get status indicator
+    const getStatusIndicator = (status) => {
+      const indicators = {
+        'SUCCESS': 'OK',
+        'BUILDING': 'BLD',
+        'DEPLOYING': 'DEP',
+        'FAILED': 'ERR',
+        'CRASHED': 'CRS',
+        'REMOVED': 'DEL',
+        'SKIPPED': 'SKP'
+      };
+      return indicators[status] || 'UNK';
+    };
 
-    return `
+    // Generate workspace title
+    const workspaceTitle = hasFilters ? 
+      (workspaces.length === 1 && workspaces[0].projects.length === 1 ? 
+        workspaces[0].projects[0].name : 
+        workspaces.map(w => w.name).join(', ')) :
+      workspaces.map(w => w.name).join(', ');
+
+    // Flatten all service+environment combinations for compact display
+    const allServices = [];
+    workspaces.forEach(workspace => {
+      workspace.projects.forEach(project => {
+        project.services.forEach(service => {
+          // Create an entry for each environment the service is deployed to
+          if (service.deployments.length > 0) {
+            service.deployments.forEach(deployment => {
+              allServices.push({
+                workspaceName: workspace.name,
+                projectName: project.name,
+                serviceName: service.name,
+                deployment: deployment,
+                environmentName: deployment.environmentName
+              });
+            });
+          } else {
+            // If no deployments, still show the service
+            allServices.push({
+              workspaceName: workspace.name,
+              projectName: project.name,
+              serviceName: service.name,
+              deployment: null,
+              environmentName: 'N/A'
+            });
+          }
+        });
+      });
+    });
+
+        return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=800, initial-scale=1.0">
-    <title>Railway Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway Dashboard - ${workspaceTitle}</title>
     <style>
         body {
             font-family: 'Courier New', monospace;
             background-color: white;
             color: black;
             margin: 0;
-            padding: 16px;
+            padding: 6px;
             line-height: 1.2;
-            font-size: 14px;
+            font-size: 10px;
             width: 800px;
             height: 470px;
             overflow: hidden;
             box-sizing: border-box;
         }
-        .container {
-            width: 95%;
-            height: 95%;
-            display: flex;
-            flex-direction: column;
-        }
         .header {
-            text-align: center;
-            border-bottom: 2px solid black;
-            padding: 6px 0;
-            margin-bottom: 12px;
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        .header p {
-            margin: 3px 0 0 0;
-            font-size: 11px;
-        }
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            flex: 1;
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
-        .left-panel, .right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .section {
-            border: 1px solid black;
-            padding: 8px;
-            background-color: white;
-        }
-        .section-title {
-            font-size: 13px;
-            font-weight: bold;
-            margin: 0 0 6px 0;
             border-bottom: 1px solid black;
             padding-bottom: 3px;
+            margin-bottom: 6px;
+            height: 36px;
+            text-align: center;
         }
-        .services-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
+        .title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 9pt;
+            margin: 0;
+        }
+        .main-layout {
+            display: flex;
+            gap: 8px;
+            height: 320px;
+        }
+        .left-column {
+            width: 50%;
+        }
+        .right-column {
+            width: 50%;
+        }
+        .section {
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 3px;
+            border-bottom: 1px solid #ccc;
         }
         .service-box {
-            border: 1px solid black;
-            padding: 6px;
-            font-size: 10px;
+            border: 1px solid #ccc;
+            padding: 4px;
+            margin-bottom: 3px;
+            background-color: #f9f9f9;
+            font-size: 10pt;
         }
-        .service-box.error {
-            background-color: #eee;
-            border: 2px solid black;
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2px;
         }
         .service-name {
             font-weight: bold;
-            font-size: 11px;
-            margin-bottom: 3px;
+            font-size: 10pt;
         }
-        .service-status {
-            margin: 1px 0;
+        .service-info {
+            font-size: 10pt;
+            margin-top: 2px;
         }
-        .status-success {
+        .status {
+            padding: 1px 3px;
+            font-size: 10pt;
             font-weight: bold;
         }
-        .status-error {
-            font-weight: bold;
-            text-decoration: underline;
-        }
-        .volumes-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            font-size: 10px;
-        }
+        .status-success { background-color: black; color: white; }
+        .status-building { background-color: white; color: black; border: 1px solid black; }
+        .status-deploying { background-color: black; color: white; }
+        .status-failed { background-color: black; color: white; }
+        .status-crashed { background-color: black; color: white; }
+        .status-removed { background-color: white; color: black; border: 1px solid black; }
+        .status-skipped { background-color: white; color: black; border: 1px solid black; }
+        .status-none { background-color: white; color: black; border: 1px dashed black; }
         .volume-box {
-            border: 1px solid black;
-            padding: 6px;
+            border: 1px solid #ddd;
+            padding: 3px;
+            margin-bottom: 2px;
+            background-color: #f5f5f5;
+            font-size: 10pt;
         }
-        .volume-usage {
-            font-weight: bold;
-            font-size: 11px;
-        }
-        .logs-section {
-            flex: 1;
-            overflow: hidden;
-        }
-        .logs-container {
-            height: 90%;
-            overflow-y: auto;
-            border: 1px solid black;
-            background-color: white;
-            font-size: 10px;
-        }
-        .log-entry {
-            padding: 3px 6px;
-            border-bottom: 1px solid #ddd;
-            line-height: 1.2;
-        }
-        .log-entry.ERROR {
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-        .log-entry.WARN {
-            background-color: #f8f8f8;
-        }
-        .log-time {
-            font-size: 10px;
+        .volume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1px;
         }
-        .log-msg {
-            word-break: break-word;
+        .volume-path {
             font-weight: bold;
+            font-size: 10pt;
+        }
+        .volume-usage {
+            font-size: 10pt;
+        }
+        .volume-details {
+            font-size: 10pt;
+            margin-top: 1px;
+        }
+        .event-list {
+            height: 300px;
+            overflow: hidden;
+        }
+        .event-item {
+            padding: 2px 0;
+            border-bottom: 1px dotted #ccc;
+            font-size: 10pt;
+            margin-bottom: 2px;
+        }
+        .event-item.error {
+            border-left: 2px solid black;
+            padding-left: 3px;
+        }
+        .event-item.warn {
+            border-left: 2px dashed black;
+            padding-left: 3px;
+        }
+        .event-item.info {
+            border-left: 1px solid #ccc;
+            padding-left: 3px;
+        }
+        .event-time {
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        .event-message {
+            margin-top: 1px;
+            line-height: 1.1;
         }
         .timestamp {
+            height: 20px;
             text-align: center;
-            font-size: 10px;
-            padding: 6px 0;
-            border-top: 1px solid black;
-            margin-top: auto;
-        }
-        .compact-info {
-            font-size: 10px;
-            line-height: 1.2;
-        }
-        .info-row {
-            display: grid;
-            grid-template-columns: 45px 1fr;
-            gap: 6px;
-            margin: 2px 0;
-        }
-        .info-label {
-            font-weight: bold;
+            margin-top: 6px;
+            padding-top: 3px;
+            border-top: 1px solid #ccc;
+            font-size: 10pt;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Railway Dashboard</h1>
-            <p>${workspaceName} / ${projectName}</p>
-        </div>
-        
-        <div class="main-content">
-            <div class="left-panel">
-        
-                ${services.length > 0 ? `
+    <div class="header">
+        <div class="title">Railway Dashboard</div>
+        <div class="subtitle">${workspaceTitle}${hasFilters ? ' (Filtered)' : ''}</div>
+    </div>
+
+    <div class="main-layout">
+        <div class="left-column">
+            ${allServices.length > 0 ? `
                 <div class="section">
-                    <div class="section-title">Services (${services.length})</div>
-                    <div class="services-grid">
-                        ${services.slice(0, 6).map(service => `
-                        <div class="service-box ${!service.deployment || service.deployment.status !== 'SUCCESS' ? 'error' : ''}">
-                            <div class="service-name">${service.serviceName}</div>
-                            ${service.deployment ? `
-                            <div class="service-status">
-                                <span class="${service.deployment.status === 'SUCCESS' ? 'status-success' : 'status-error'}">${service.deployment.status}</span>
+                    <div class="section-title">Services</div>
+                    ${allServices.slice(0, 12).map(service => {
+                      const deployment = service.deployment;
+                      const statusIndicator = deployment ? getStatusIndicator(deployment.status) : 'NONE';
+                      const statusClass = deployment ? `status-${deployment.status.toLowerCase()}` : 'status-none';
+                      const envName = service.environmentName;
+                      const timeStr = deployment ? this.formatTimestamp(deployment.createdAt) : '';
+                      
+                      return `
+                        <div class="service-box">
+                            <div class="service-header">
+                                <span class="service-name">${hasFilters ? service.serviceName : `${service.projectName}/${service.serviceName}`}</span>
+                                <span class="status ${statusClass}">${statusIndicator}</span>
                             </div>
-                            <div class="compact-info">
-                                <div>${service.deployment.environment.name}</div>
-                                <div>${this.formatEventTimestamp(service.deployment.createdAt)}</div>
-                            </div>
-                            ` : '<div>No deployment</div>'}
-                        </div>
-                        `).join('')}
-                        ${services.length > 6 ? `<div class="service-box">+${services.length - 6} more</div>` : ''}
-                    </div>
-                </div>
-                ` : ''}
-        
-                ${volumes.length > 0 ? `
-                <div class="section">
-                    <div class="section-title">Volumes (${volumes.length})</div>
-                    <div class="volumes-grid">
-                        ${volumes.slice(0, 4).map((volume, index) => `
-                        <div class="volume-box">
-                            <div>${volume.environmentName}</div>
-                            <div class="volume-usage">${Math.round((volume.currentSizeMB / volume.sizeMB) * 100)}%</div>
-                            <div class="compact-info">
-                                <div>Vol ${index + 1}</div>
-                                <div>${volume.currentSizeMB.toFixed(2)}/${volume.sizeMB}MB</div>
+                            <div class="service-info">
+                                ${envName} • ${timeStr || 'No deployment'}
                             </div>
                         </div>
-                        `).join('')}
-                        ${volumes.length > 4 ? `<div class="volume-box">+${volumes.length - 4} more</div>` : ''}
-                    </div>
+                      `;
+                    }).join('')}
                 </div>
-                ` : `
+            ` : ''}
+
+            ${volumes.length > 0 ? `
                 <div class="section">
                     <div class="section-title">Volumes</div>
-                    <div class="compact-info">No volumes configured</div>
-                </div>
-                `}
-            </div>
-            
-            <div class="right-panel">
-        
-                ${eventLogs.length > 0 ? `
-                <div class="section logs-section">
-                    <div class="section-title">Events (${eventLogsConfig.maxLogEntries} max) - ${eventLogs.length}</div>
-                    <div class="logs-container">
-                        ${eventLogs.slice(0, eventLogsConfig.maxLogEntries).map(log => `
-                        <div class="log-entry ${log.severity}">
-                            <div class="log-time">${this.formatEventTimestamp(log.timestamp)}</div>
-                            <div class="log-msg">${this.escapeHtml(this.extractEventAction(log.message))}</div>
+                    ${volumes.slice(0, 8).map(volume => {
+                      const usagePercent = ((volume.currentSizeMB / volume.sizeMB) * 100).toFixed(0);
+                      const currentGB = (volume.currentSizeMB / 1024).toFixed(1);
+                      const maxGB = (volume.sizeMB / 1024).toFixed(1);
+                      
+                      return `
+                        <div class="volume-box">
+                            <div class="volume-header">
+                                <span class="volume-path">${volume.serviceName} • ${volume.environmentName}</span>
+                                <span class="volume-usage">${currentGB}/${maxGB}GB (${usagePercent}%)</span>
+                            </div>
+                            <div class="volume-details">
+                                ${volume.mountPath}
+                            </div>
                         </div>
+                      `;
+                    }).join('')}
+                </div>
+            ` : ''}
+        </div>
+
+        <div class="right-column">
+            ${eventLogs.length > 0 ? `
+                <div class="section">
+                    <div class="section-title">Recent Events</div>
+                    ${this.data.data.eventLogsEnvironmentId ? `
+                        <div style="font-size: 10pt; margin-bottom: 4px; opacity: 0.8;">
+                            ${(() => {
+                                // Find the service and environment name for the event logs environment
+                                const logsEnvId = this.data.data.eventLogsEnvironmentId;
+                                for (const workspace of workspaces) {
+                                    for (const project of workspace.projects) {
+                                        for (const service of project.services) {
+                                            for (const deployment of service.deployments) {
+                                                if (deployment.environmentId === logsEnvId) {
+                                                    return `${service.name} • ${deployment.environmentName}`;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                return `Environment: ${logsEnvId}`;
+                            })()}
+                        </div>
+                    ` : ''}
+                    <div class="event-list">
+                        ${eventLogs.slice(0, 8).map(log => `
+                            <div class="event-item ${log.severity}">
+                                <div class="event-time">${this.formatEventTimestamp(log.timestamp)}</div>
+                                <div class="event-message">${this.escapeHtml(this.extractEventAction(log.message))}</div>
+                            </div>
                         `).join('')}
                     </div>
                 </div>
-                ` : this.data.data.eventLogsEnvironmentId ? `
+            ` : this.data.data.eventLogsEnvironmentId ? `
                 <div class="section">
-                    <div class="section-title">Events (${eventLogsConfig.maxLogEntries} max)</div>
-                    <div class="compact-info">No recent events</div>
+                    <div class="section-title">Recent Events</div>
+                    <div style="font-size: 8px; margin-bottom: 4px; opacity: 0.8;">
+                        ${(() => {
+                            // Find the service and environment name for the event logs environment
+                            const logsEnvId = this.data.data.eventLogsEnvironmentId;
+                            for (const workspace of workspaces) {
+                                for (const project of workspace.projects) {
+                                    for (const service of project.services) {
+                                        for (const deployment of service.deployments) {
+                                            if (deployment.environmentId === logsEnvId) {
+                                                return `${service.name} • ${deployment.environmentName}`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            return `Environment: ${logsEnvId}`;
+                        })()}
+                    </div>
+                    <div style="font-size: 8px;">No recent events</div>
                 </div>
-                ` : `
-                <div class="section">
-                    <div class="section-title">Events</div>
-                    <div class="compact-info">No environment ID configured</div>
-                </div>
-                `}
-            </div>
+            ` : ''}
         </div>
-        
-        <div class="timestamp">
-            Updated: ${this.formatTimestamp(this.data.timestamp)}
-        </div>
+    </div>
+
+    <div class="timestamp">
+        Updated: ${this.formatTimestamp(this.data.timestamp)}
     </div>
 </body>
 </html>`;
@@ -502,8 +666,8 @@ class DashboardGenerator {
       return this.generateErrorHTML();
     }
 
-    const { services, volumes, eventLogs } = this.extractProjectData();
-    return this.generateSuccessHTML(services, volumes, eventLogs);
+    const { workspaces, volumes, eventLogs, hasFilters } = this.extractComprehensiveData();
+    return this.generateComprehensiveHTML(workspaces, volumes, eventLogs, hasFilters);
   }
 }
 

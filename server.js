@@ -60,12 +60,12 @@ app.get('/health', (req, res) => {
 app.get('/', authenticateToken, async (req, res) => {
   try {
     // Extract parameters from headers
-    const environmentId = req.headers['x-environment-id'] || process.env.RAILWAY_ENVIRONMENT_ID;
-    const lookbackHours = parseInt(req.headers['x-lookback-hours']) || 24;
+    const terminusLogsEnvId = req.headers['x-logs-environment-id'] || req.headers['x-terminus-logs-env-id'] || process.env.TERMINUS_LOGS_ENV_ID;
     const projectId = req.headers['x-project-id'];
     const serviceId = req.headers['x-service-id'];
+    const environmentId = req.headers['x-environment-id'];
 
-    console.log(`📊 Dashboard request - Environment: ${environmentId}, Lookback: ${lookbackHours}h`);
+    console.log(`📊 Dashboard request - Logs Env: ${terminusLogsEnvId || 'none'}, Filters - Project: ${projectId || 'all'}, Service: ${serviceId || 'all'}, Environment: ${environmentId || 'all'}`);
 
     // Validate Railway token
     const railwayToken = process.env.RAILWAY_TOKEN;
@@ -78,7 +78,8 @@ app.get('/', authenticateToken, async (req, res) => {
 
     // Fetch data from Railway
     const client = new RailwayClient(railwayToken);
-    const dashboardData = await client.fetchDashboardData(environmentId, lookbackHours);
+    const filters = { projectId, serviceId, environmentId };
+    const dashboardData = await client.fetchDashboardData(terminusLogsEnvId, filters);
 
     // Generate HTML
     const generator = new DashboardGenerator();
@@ -194,10 +195,12 @@ app.get('/debug/advanced', authenticateToken, async (req, res) => {
 // JSON data endpoint (for API consumers)
 app.get('/api/data', authenticateToken, async (req, res) => {
   try {
-    const environmentId = req.headers['x-environment-id'] || process.env.RAILWAY_ENVIRONMENT_ID;
-    const lookbackHours = parseInt(req.headers['x-lookback-hours']) || 24;
+    const terminusLogsEnvId = req.headers['x-logs-environment-id'] || req.headers['x-terminus-logs-env-id'] || process.env.TERMINUS_LOGS_ENV_ID;
+    const projectId = req.headers['x-project-id'];
+    const serviceId = req.headers['x-service-id'];
+    const environmentId = req.headers['x-environment-id'];
 
-    console.log(`📡 API data request - Environment: ${environmentId}, Lookback: ${lookbackHours}h`);
+    console.log(`📡 API data request - Logs Env: ${terminusLogsEnvId || 'none'}, Filters - Project: ${projectId || 'all'}, Service: ${serviceId || 'all'}, Environment: ${environmentId || 'all'}`);
 
     const railwayToken = process.env.RAILWAY_TOKEN;
     if (!railwayToken) {
@@ -208,7 +211,8 @@ app.get('/api/data', authenticateToken, async (req, res) => {
     }
 
     const client = new RailwayClient(railwayToken);
-    const dashboardData = await client.fetchDashboardData(environmentId, lookbackHours);
+    const filters = { projectId, serviceId, environmentId };
+    const dashboardData = await client.fetchDashboardData(terminusLogsEnvId, filters);
 
     res.status(200).json(dashboardData);
 
