@@ -1,0 +1,41 @@
+query volume_sizes {
+  me {
+    workspaces {
+      name
+      team {
+        id
+        projects {
+          edges {
+            node {
+              name
+              services {
+                edges {
+                  node {
+                    name
+                  }
+                }
+              }
+              environments {
+                edges {
+                  node {
+                    name
+                    volumeInstances {
+                      edges {
+                        node {
+                          currentSizeMB
+                          sizeMB
+                          mountPath
+                          region
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 

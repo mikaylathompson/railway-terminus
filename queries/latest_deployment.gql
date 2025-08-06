@@ -1,0 +1,36 @@
+query LatestDeployments($first: Int!) {
+  me {
+    workspaces {
+      name
+      team {
+        projects {
+          edges {
+            node {
+              name
+              services {
+                edges {
+                  node {
+                    id
+                    name
+                    deployments(first: $first) {
+                      edges {
+                        node {
+                          id
+                          status
+                          createdAt
+                          environment {
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 

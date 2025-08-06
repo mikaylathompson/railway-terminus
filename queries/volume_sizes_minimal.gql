@@ -1,0 +1,32 @@
+query volume_sizes_minimal {
+  me {
+    workspaces {
+      name
+      team {
+        id
+        projects {
+          edges {
+            node {
+              name
+              environments {
+                edges {
+                  node {
+                    name
+                    volumeInstances {
+                      edges {
+                        node {
+                          currentSizeMB
+                          sizeMB
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 

@@ -1,0 +1,12 @@
+query event_logs($environmentId: String!, $startDate: String, $endDate: String) {
+  environmentLogs(
+    environmentId: $environmentId
+    filter: "<EVENT>"
+    afterDate: $startDate
+    beforeDate: $endDate
+  ) {
+    timestamp
+    message
+    severity
+  }
+} 

@@ -1,0 +1,10 @@
+query EventLogsMinimal($environmentId: ID!) {
+  environmentLogs(environmentId: $environmentId, first: 5) {
+    edges {
+      node {
+        timestamp
+        message
+      }
+    }
+  }
+} 

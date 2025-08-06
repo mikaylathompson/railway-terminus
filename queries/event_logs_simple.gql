@@ -1,0 +1,11 @@
+query EventLogsSimple($environmentId: ID!) {
+  environmentLogs(environmentId: $environmentId, first: 50) {
+    edges {
+      node {
+        timestamp
+        message
+        severity
+      }
+    }
+  }
+} 
