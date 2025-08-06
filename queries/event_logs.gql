@@ -1,12 +1,11 @@
-query event_logs($environmentId: String!, $startDate: String, $endDate: String) {
+query event_logs($environmentId: String!, $filter: String, $afterLimit: Int) {
   environmentLogs(
     environmentId: $environmentId
-    filter: "<EVENT>"
-    afterDate: $startDate
-    beforeDate: $endDate
+    filter: $filter
+    afterLimit: $afterLimit
   ) {
     timestamp
     message
     severity
   }
-} 
+}

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const eventLogsConfig = require('./config/event-logs');
 
 class DashboardGenerator {
   constructor() {
@@ -40,9 +41,40 @@ class DashboardGenerator {
   }
 
   extractEventAction(message) {
-    // Extract text between square brackets, e.g., "[REPORT-GENERATED]" from message
-    const match = message.match(/\[([^\]]+)\]/);
-    return match ? match[1] : message.substring(0, 20) + '...';
+    const algorithm = eventLogsConfig.displayAlgorithm;
+    const fallbackMaxLength = eventLogsConfig.fallback.maxLength;
+
+    try {
+      switch (algorithm) {
+        case 'regex':
+          const match = message.match(eventLogsConfig.displayRegex);
+          if (match && match[1]) {
+            return match[1];
+          }
+          // No match - use fallback
+          return message.length > fallbackMaxLength 
+            ? message.substring(0, fallbackMaxLength) + '...'
+            : message;
+        
+        case 'custom':
+          const result = eventLogsConfig.customDisplayFunction(message);
+          return result || (message.length > fallbackMaxLength 
+            ? message.substring(0, fallbackMaxLength) + '...'
+            : message);
+        
+        default:
+          console.warn(`Unknown display algorithm: ${algorithm}, falling back to regex`);
+          const fallbackMatch = message.match(eventLogsConfig.displayRegex);
+          return fallbackMatch && fallbackMatch[1] 
+            ? fallbackMatch[1] 
+            : message.substring(0, fallbackMaxLength) + '...';
+      }
+    } catch (error) {
+      console.warn(`Error in display algorithm: ${error.message}, using fallback`);
+      return message.length > fallbackMaxLength 
+        ? message.substring(0, fallbackMaxLength) + '...'
+        : message;
+    }
   }
 
   escapeHtml(text) {
@@ -418,9 +450,9 @@ class DashboardGenerator {
         
                 ${eventLogs.length > 0 ? `
                 <div class="section logs-section">
-                    <div class="section-title">Events (${this.data.data.lookbackHours || 24}h) - ${eventLogs.length}</div>
+                    <div class="section-title">Events (${eventLogsConfig.maxLogEntries} max) - ${eventLogs.length}</div>
                     <div class="logs-container">
-                        ${eventLogs.slice(0, 12).map(log => `
+                        ${eventLogs.slice(0, eventLogsConfig.maxLogEntries).map(log => `
                         <div class="log-entry ${log.severity}">
                             <div class="log-time">${this.formatEventTimestamp(log.timestamp)}</div>
                             <div class="log-msg">${this.escapeHtml(this.extractEventAction(log.message))}</div>
@@ -430,7 +462,7 @@ class DashboardGenerator {
                 </div>
                 ` : this.data.data.eventLogsEnvironmentId ? `
                 <div class="section">
-                    <div class="section-title">Events (${this.data.data.lookbackHours || 24}h)</div>
+                    <div class="section-title">Events (${eventLogsConfig.maxLogEntries} max)</div>
                     <div class="compact-info">No recent events</div>
                 </div>
                 ` : `

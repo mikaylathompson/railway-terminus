@@ -1,6 +1,7 @@
 const { RailwayClient } = require('./query-railway');
 const fs = require('fs');
 const path = require('path');
+const eventLogsConfig = require('./config/event-logs');
 
 async function testIndividualQueries() {
   console.log('🔍 Testing Railway GraphQL queries individually...\n');
@@ -52,13 +53,11 @@ async function testIndividualQueries() {
     console.log('4. Testing event logs query...');
     try {
       const eventLogsQuery = fs.readFileSync(path.join(queriesDir, 'event_logs.gql'), 'utf8');
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const now = new Date().toISOString();
-      console.log(`📅 Date range: ${twentyFourHoursAgo} to ${now}`);
+      console.log(`📅 Config: max entries=${eventLogsConfig.maxLogEntries}, filter="${eventLogsConfig.logFilter}"`);
       await client.makeGraphQLRequest(eventLogsQuery, {
         environmentId: environmentId,
-        startDate: twentyFourHoursAgo,
-        endDate: now
+        filter: eventLogsConfig.logFilter,
+        afterLimit: eventLogsConfig.maxLogEntries
       }, 'Event Logs');
       console.log('✅ Event logs query successful\n');
     } catch (error) {

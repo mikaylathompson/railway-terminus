@@ -1,6 +1,7 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const eventLogsConfig = require('./config/event-logs');
 
 const RAILWAY_API_URL = 'https://backboard.railway.com/graphql/v2';
 
@@ -73,9 +74,9 @@ class RailwayClient {
       const deploymentQuery = fs.readFileSync(path.join(queriesDir, 'latest_deployment.gql'), 'utf8');
       const eventLogsQuery = fs.readFileSync(path.join(queriesDir, 'event_logs.gql'), 'utf8');
       
-      // Calculate lookback time for event logs
-      const lookbackTime = new Date(Date.now() - lookbackHours * 60 * 60 * 1000).toISOString();
-      const now = new Date().toISOString();
+      // Get event logs configuration
+      const maxEntries = eventLogsConfig.maxLogEntries;
+      const logFilter = eventLogsConfig.logFilter;
       
       // Try deployment query first (this usually works)
       let deploymentData;
@@ -106,8 +107,8 @@ class RailwayClient {
         try {
           eventLogsData = await this.makeGraphQLRequest(eventLogsQuery, {
             environmentId: environmentId,
-            startDate: lookbackTime,
-            endDate: now
+            filter: logFilter,
+            afterLimit: maxEntries
           }, 'Event Logs');
           eventLogsQueryUsed = 'full';
         } catch (error) {
@@ -128,10 +129,12 @@ class RailwayClient {
         data: {
           volumes: volumeData,
           deployments: deploymentData,
-          eventLogs: eventLogsData,
-          eventLogsEnvironmentId: environmentId,
-          eventLogsStartDate: lookbackTime,
-          eventLogsEndDate: now,
+                  eventLogs: eventLogsData,
+        eventLogsEnvironmentId: environmentId,
+        eventLogsConfig: {
+          maxEntries: maxEntries,
+          filter: logFilter
+        },
           lookbackHours: lookbackHours,
           queryInfo: {
             volumeQueryUsed,

@@ -1,10 +1,11 @@
-query EventLogsMinimal($environmentId: ID!) {
-  environmentLogs(environmentId: $environmentId, first: 5) {
-    edges {
-      node {
-        timestamp
-        message
-      }
-    }
+query event_logs($environmentId: String!, $filter: String, $afterLimit: Int) {
+  environmentLogs(
+    environmentId: $environmentId
+    filter: $filter
+    afterLimit: $afterLimit
+  ) {
+    timestamp
+    message
+    severity
   }
-} 
+}
