@@ -564,14 +564,14 @@ class DashboardGenerator {
                 </div>
             ` : ''}
 
-            ${!this.data.data.eventLogsEnvironmentId && volumes.length > 0 ? `
+            ${this.data.data.eventLogsEnvironmentId && volumes.length > 0 ? `
                 <div class="section">
                     <div class="section-title">Volumes</div>
                     ${volumes.slice(0, 8).map(volume => {
                       const usagePercent = ((volume.currentSizeMB / volume.sizeMB) * 100).toFixed(0);
                       const currentGB = (volume.currentSizeMB / 1024).toFixed(1);
                       const maxGB = (volume.sizeMB / 1024).toFixed(1);
-                      
+ 
                       return `
                         <div class="volume-box">
                             <div class="volume-header">
