@@ -564,7 +564,7 @@ class DashboardGenerator {
                 </div>
             ` : ''}
 
-            ${volumes.length > 0 ? `
+            ${!this.data.data.eventLogsEnvironmentId && volumes.length > 0 ? `
                 <div class="section">
                     <div class="section-title">Volumes</div>
                     ${volumes.slice(0, 8).map(volume => {
@@ -587,10 +587,10 @@ class DashboardGenerator {
         </div>
 
         <div class="right-column">
-            ${eventLogs.length > 0 ? `
-                <div class="section">
-                    <div class="section-title">Recent Events</div>
-                    ${this.data.data.eventLogsEnvironmentId ? `
+            ${this.data.data.eventLogsEnvironmentId ? `
+                ${eventLogs.length > 0 ? `
+                    <div class="section">
+                        <div class="section-title">Recent Events</div>
                         <div style="font-size: 10pt; margin-bottom: 4px; opacity: 0.8;">
                             ${(() => {
                                 // Find the service and environment name for the event logs environment
@@ -609,38 +609,57 @@ class DashboardGenerator {
                                 return `Environment: ${logsEnvId}`;
                             })()}
                         </div>
-                    ` : ''}
-                    <div class="event-list">
-                        ${eventLogs.slice(0, 8).map(log => `
-                            <div class="event-item ${log.severity}">
-                                <div class="event-time">${this.formatEventTimestamp(log.timestamp)}</div>
-                                <div class="event-message">${this.escapeHtml(this.extractEventAction(log.message))}</div>
-                            </div>
-                        `).join('')}
+                        <div class="event-list">
+                            ${eventLogs.slice(0, 8).map(log => `
+                                <div class="event-item ${log.severity}">
+                                    <div class="event-time">${this.formatEventTimestamp(log.timestamp)}</div>
+                                    <div class="event-message">${this.escapeHtml(this.extractEventAction(log.message))}</div>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                </div>
-            ` : this.data.data.eventLogsEnvironmentId ? `
-                <div class="section">
-                    <div class="section-title">Recent Events</div>
-                    <div style="font-size: 8px; margin-bottom: 4px; opacity: 0.8;">
-                        ${(() => {
-                            // Find the service and environment name for the event logs environment
-                            const logsEnvId = this.data.data.eventLogsEnvironmentId;
-                            for (const workspace of workspaces) {
-                                for (const project of workspace.projects) {
-                                    for (const service of project.services) {
-                                        for (const deployment of service.deployments) {
-                                            if (deployment.environmentId === logsEnvId) {
-                                                return `${service.name} • ${deployment.environmentName}`;
+                ` : `
+                    <div class="section">
+                        <div class="section-title">Recent Events</div>
+                        <div style="font-size: 8px; margin-bottom: 4px; opacity: 0.8;">
+                            ${(() => {
+                                // Find the service and environment name for the event logs environment
+                                const logsEnvId = this.data.data.eventLogsEnvironmentId;
+                                for (const workspace of workspaces) {
+                                    for (const project of workspace.projects) {
+                                        for (const service of project.services) {
+                                            for (const deployment of service.deployments) {
+                                                if (deployment.environmentId === logsEnvId) {
+                                                    return `${service.name} • ${deployment.environmentName}`;
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            return `Environment: ${logsEnvId}`;
-                        })()}
+                                return `Environment: ${logsEnvId}`;
+                            })()}
+                        </div>
+                        <div style="font-size: 8px;">No recent events</div>
                     </div>
-                    <div style="font-size: 8px;">No recent events</div>
+                `}
+            ` : volumes.length > 0 ? `
+                <div class="section">
+                    <div class="section-title">Volumes</div>
+                    ${volumes.slice(0, 8).map(volume => {
+                      const usagePercent = ((volume.currentSizeMB / volume.sizeMB) * 100).toFixed(0);
+                      const currentGB = (volume.currentSizeMB / 1024).toFixed(1);
+                      const maxGB = (volume.sizeMB / 1024).toFixed(1);
+
+                      return `
+                        <div class="volume-box">
+                            <div class="volume-header">
+                                <span class="volume-details">${volume.serviceName} • ${volume.environmentName}</span>
+                                <span class="volume-usage">${currentGB}/${maxGB}GB (${usagePercent}%)</span>
+                            </div>
+                            <div class="volume-path">${volume.mountPath}</div>
+                        </div>
+                      `;
+                    }).join('')}
                 </div>
             ` : ''}
         </div>
