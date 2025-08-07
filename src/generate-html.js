@@ -403,7 +403,7 @@ class DashboardGenerator {
             border-bottom: 1px solid black;
             padding-bottom: 3px;
             margin-bottom: 6px;
-            height: 36px;
+            height: 40px;
             text-align: center;
         }
         .title {
@@ -418,7 +418,7 @@ class DashboardGenerator {
         .main-layout {
             display: flex;
             gap: 8px;
-            height: 320px;
+            height: 85%;
         }
         .left-column {
             width: 50%;
