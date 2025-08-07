@@ -8,6 +8,7 @@ const { debugAdvanced } = require('./src/debug-advanced');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const domain = process.env.RAILWAY_PUBLIC_DOMAIN || `http://localhost:${PORT}`;
 
 // Middleware
 app.use(helmet({
@@ -254,10 +255,10 @@ app.use((req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚂 Railway Terminus server starting on port ${PORT}`);
-  console.log(`📊 Dashboard available at: http://localhost:${PORT}/`);
-  console.log(`🔍 Debug endpoint: http://localhost:${PORT}/debug`);
-  console.log(`📡 API endpoint: http://localhost:${PORT}/api/data`);
-  console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Dashboard available at: ${domain}/`);
+  console.log(`🔍 Debug endpoint: ${domain}/debug`);
+  console.log(`📡 API endpoint: ${domain}/api/data`);
+  console.log(`❤️  Health check: ${domain}/health`);
   
   // Validate required environment variables
   if (!process.env.TERMINUS_AUTH_TOKEN) {
@@ -268,4 +269,4 @@ app.listen(PORT, () => {
   }
 });
 
-module.exports = app; 
+module.exports = app;
