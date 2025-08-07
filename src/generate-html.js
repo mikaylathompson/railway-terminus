@@ -292,7 +292,7 @@ class DashboardGenerator {
             margin-bottom: 20px;
         }
         .error {
-            background-color: #f0f0f0;
+            background-color:rgb(218, 218, 218);
             border: 2px solid black;
             padding: 15px;
             margin: 20px 0;
@@ -301,7 +301,7 @@ class DashboardGenerator {
             text-align: center;
             font-size: 0.9em;
             margin-top: 30px;
-            border-top: 1px solid black;
+            border-top: 2px solid black;
             padding-top: 10px;
         }
     </style>
@@ -400,7 +400,7 @@ class DashboardGenerator {
             box-sizing: border-box;
         }
         .header {
-            border-bottom: 1px solid black;
+            border-bottom: 2px solid black;
             padding-bottom: 3px;
             margin-bottom: 6px;
             height: 40px;
@@ -433,13 +433,12 @@ class DashboardGenerator {
             font-size: 12pt;
             font-weight: bold;
             margin-bottom: 3px;
-            border-bottom: 1px solid #ccc;
+            border-bottom: 2px solid black;
         }
         .service-box {
-            border: 1px solid #ccc;
+            border: 2px solid black;
             padding: 4px;
             margin-bottom: 3px;
-            background-color: #f9f9f9;
             font-size: 10pt;
         }
         .service-header {
@@ -470,10 +469,9 @@ class DashboardGenerator {
         .status-skipped { background-color: white; color: black; border: 1px solid black; }
         .status-none { background-color: white; color: black; border: 1px dashed black; }
         .volume-box {
-            border: 1px solid #ddd;
+            border: 2px solid black;
             padding: 3px;
             margin-bottom: 2px;
-            background-color: #f5f5f5;
             font-size: 10pt;
         }
         .volume-header {
@@ -482,14 +480,14 @@ class DashboardGenerator {
             align-items: center;
             margin-bottom: 1px;
         }
-        .volume-path {
+        .volume-details {
             font-weight: bold;
             font-size: 10pt;
         }
         .volume-usage {
             font-size: 10pt;
         }
-        .volume-details {
+        .volume-path {
             font-size: 10pt;
             margin-top: 1px;
         }
@@ -499,7 +497,7 @@ class DashboardGenerator {
         }
         .event-item {
             padding: 2px 0;
-            border-bottom: 1px dotted #ccc;
+            border-bottom: 2px dotted black;
             font-size: 10pt;
             margin-bottom: 2px;
         }
@@ -512,7 +510,7 @@ class DashboardGenerator {
             padding-left: 3px;
         }
         .event-item.info {
-            border-left: 1px solid #ccc;
+            border-left: 1px solid black;
             padding-left: 3px;
         }
         .event-time {
@@ -528,7 +526,7 @@ class DashboardGenerator {
             text-align: center;
             margin-top: 6px;
             padding-top: 3px;
-            border-top: 1px solid #ccc;
+            border-top: 2px dotted black;
             font-size: 10pt;
         }
     </style>
@@ -577,12 +575,10 @@ class DashboardGenerator {
                       return `
                         <div class="volume-box">
                             <div class="volume-header">
-                                <span class="volume-path">${volume.serviceName} • ${volume.environmentName}</span>
+                                <span class="volume-details">${volume.serviceName} • ${volume.environmentName}</span>
                                 <span class="volume-usage">${currentGB}/${maxGB}GB (${usagePercent}%)</span>
                             </div>
-                            <div class="volume-details">
-                                ${volume.mountPath}
-                            </div>
+                            <div class="volume-path">${volume.mountPath}</div>
                         </div>
                       `;
                     }).join('')}
