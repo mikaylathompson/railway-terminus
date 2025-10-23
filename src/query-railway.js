@@ -247,73 +247,150 @@ class RailwayClient {
 
   filterVolumesData(data, filters) {
     if (!data?.me?.workspaces || !filters) return data;
-    
+
     const { projectId, serviceId, environmentId } = filters;
     if (!projectId && !serviceId && !environmentId) return data;
 
-    const filteredData = {
+    const matchesEnvironment = instance => {
+      if (!environmentId) return true;
+      if (instance?.environmentId && instance.environmentId === environmentId) return true;
+      if (instance?.environment?.id && instance.environment.id === environmentId) return true;
+      return false;
+    };
+
+    const matchesService = instance => {
+      if (!serviceId) return true;
+      if (instance?.serviceId && instance.serviceId === serviceId) return true;
+      if (instance?.service?.id && instance.service.id === serviceId) return true;
+      return false;
+    };
+
+    const filterInstanceConnection = connection => {
+      if (!connection?.edges) return connection;
+
+      const filteredEdges = connection.edges.filter(edge => {
+        const instance = edge?.node;
+        if (!instance) return false;
+        return matchesEnvironment(instance) && matchesService(instance);
+      });
+
+      return { ...connection, edges: filteredEdges };
+    };
+
+    const filterProjectConnection = connection => {
+      if (!connection?.edges) return connection;
+
+      const filteredEdges = connection.edges
+        .filter(edge => {
+          if (!projectId) return true;
+          return edge?.node?.id === projectId;
+        })
+        .map(edge => {
+          if (!edge?.node) return edge;
+
+          const projectNode = { ...edge.node };
+
+          if (projectNode.volumes?.edges) {
+            const filteredVolumeEdges = projectNode.volumes.edges
+              .map(volumeEdge => {
+                const volumeNode = volumeEdge?.node;
+                if (!volumeNode) return null;
+
+                const filteredInstances = filterInstanceConnection(volumeNode.volumeInstances);
+                if ((serviceId || environmentId) && (!filteredInstances?.edges || filteredInstances.edges.length === 0)) {
+                  return null;
+                }
+
+                return {
+                  ...volumeEdge,
+                  node: {
+                    ...volumeNode,
+                    volumeInstances: filteredInstances
+                  }
+                };
+              })
+              .filter(Boolean);
+
+            projectNode.volumes = { ...projectNode.volumes, edges: filteredVolumeEdges };
+          }
+
+          if (projectNode.environments?.edges) {
+            const filteredEnvironmentEdges = projectNode.environments.edges
+              .filter(envEdge => {
+                const envNode = envEdge?.node;
+                if (!envNode) return false;
+                if (environmentId && envNode.id !== environmentId) {
+                  return false;
+                }
+                return true;
+              })
+              .map(envEdge => {
+                const envNode = envEdge.node;
+                if (!envNode?.volumeInstances) {
+                  return envEdge;
+                }
+
+                const filteredInstances = filterInstanceConnection(envNode.volumeInstances);
+                if (serviceId && (!filteredInstances?.edges || filteredInstances.edges.length === 0)) {
+                  return null;
+                }
+
+                return {
+                  ...envEdge,
+                  node: {
+                    ...envNode,
+                    volumeInstances: filteredInstances
+                  }
+                };
+              })
+              .filter(Boolean);
+
+            projectNode.environments = { ...projectNode.environments, edges: filteredEnvironmentEdges };
+          }
+
+          return { ...edge, node: projectNode };
+        })
+        .filter(edge => {
+          if (!edge?.node) return false;
+          if (!(serviceId || environmentId)) {
+            return true;
+          }
+
+          const hasVolumeInstances = Boolean(
+            edge.node.volumes?.edges?.some(volumeEdge => volumeEdge?.node?.volumeInstances?.edges?.length) ||
+            edge.node.environments?.edges?.some(envEdge => envEdge?.node?.volumeInstances?.edges?.length)
+          );
+
+          return hasVolumeInstances;
+        });
+
+      return { ...connection, edges: filteredEdges };
+    };
+
+    const filteredWorkspaces = data.me.workspaces.map(workspace => {
+      const workspaceResult = { ...workspace };
+
+      if (workspace.projects) {
+        workspaceResult.projects = filterProjectConnection(workspace.projects);
+      }
+
+      if (workspace.team?.projects) {
+        workspaceResult.team = {
+          ...workspace.team,
+          projects: filterProjectConnection(workspace.team.projects)
+        };
+      }
+
+      return workspaceResult;
+    });
+
+    return {
       ...data,
       me: {
         ...data.me,
-        workspaces: data.me.workspaces.map(workspace => ({
-          ...workspace,
-          team: {
-            ...workspace.team,
-            projects: {
-              ...workspace.team.projects,
-              edges: workspace.team.projects.edges.filter(projectEdge => {
-                const project = projectEdge.node;
-                
-                // Filter by project ID if specified
-                if (projectId && project.id !== projectId) {
-                  return false;
-                }
-                
-                return true;
-              }).map(projectEdge => ({
-                ...projectEdge,
-                node: {
-                  ...projectEdge.node,
-                  environments: projectEdge.node.environments ? {
-                    ...projectEdge.node.environments,
-                    edges: projectEdge.node.environments.edges.filter(envEdge => {
-                      const environment = envEdge.node;
-                      
-                      // Filter by environment ID if specified
-                      if (environmentId && environment.id !== environmentId) {
-                        return false;
-                      }
-                      
-                      return true;
-                    }).map(envEdge => ({
-                      ...envEdge,
-                      node: {
-                        ...envEdge.node,
-                        volumeInstances: envEdge.node.volumeInstances ? {
-                          ...envEdge.node.volumeInstances,
-                          edges: envEdge.node.volumeInstances.edges.filter(volEdge => {
-                            const volume = volEdge.node;
-                            
-                            // Filter by service ID if specified
-                            if (serviceId && volume.serviceId !== serviceId) {
-                              return false;
-                            }
-                            
-                            return true;
-                          })
-                        } : envEdge.node.volumeInstances
-                      }
-                    }))
-                  } : projectEdge.node.environments
-                }
-              }))
-            }
-          }
-        }))
+        workspaces: filteredWorkspaces
       }
     };
-
-    return filteredData;
   }
 
   async fetchDashboardData(terminusLogsEnvId = null, filters = {}) {
