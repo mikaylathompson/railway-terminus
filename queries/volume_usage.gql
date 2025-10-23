@@ -3,79 +3,98 @@ query volumeUsage {
     workspaces {
       id
       name
+      team {
+        id
+        name
+        projects(first: 100) {
+          edges {
+            node {
+              ...VolumeProjectFields
+            }
+          }
+        }
+      }
       projects(first: 100) {
         edges {
           node {
-            id
-            name
-            volumes(first: 100) {
-              edges {
-                node {
-                  id
-                  name
-                  volumeInstances(first: 100) {
-                    edges {
-                      node {
-                        id
-                        currentSizeMB
-                        sizeMB
-                        mountPath
-                        region
-                        state
-                        type
-                        createdAt
-                        environmentId
-                        serviceId
-                        volumeId
-                        service {
-                          id
-                          name
-                        }
-                        environment {
-                          id
-                          name
-                        }
-                        volume {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
+            ...VolumeProjectFields
+          }
+        }
+      }
+    }
+  }
+}
+
+fragment VolumeProjectFields on Project {
+  id
+  name
+  volumes(first: 100) {
+    edges {
+      node {
+        id
+        name
+        volumeInstances(first: 100) {
+          edges {
+            node {
+              id
+              currentSizeMB
+              sizeMB
+              mountPath
+              region
+              state
+              type
+              createdAt
+              environmentId
+              serviceId
+              volumeId
+              environment {
+                id
+                name
+              }
+              service {
+                id
+                name
+              }
+              volume {
+                id
+                name
               }
             }
-            environments(first: 100) {
-              edges {
-                node {
-                  id
-                  name
-                  volumeInstances(first: 100) {
-                    edges {
-                      node {
-                        id
-                        currentSizeMB
-                        sizeMB
-                        mountPath
-                        region
-                        state
-                        type
-                        createdAt
-                        environmentId
-                        serviceId
-                        volumeId
-                        service {
-                          id
-                          name
-                        }
-                        volume {
-                          id
-                          name
-                        }
-                      }
-                    }
-                  }
-                }
+          }
+        }
+      }
+    }
+  }
+  environments(first: 100) {
+    edges {
+      node {
+        id
+        name
+        volumeInstances(first: 100) {
+          edges {
+            node {
+              id
+              currentSizeMB
+              sizeMB
+              mountPath
+              region
+              state
+              type
+              createdAt
+              environmentId
+              serviceId
+              volumeId
+              environment {
+                id
+                name
+              }
+              service {
+                id
+                name
+              }
+              volume {
+                id
+                name
               }
             }
           }

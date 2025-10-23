@@ -239,12 +239,11 @@ class DashboardGenerator {
             currentSizeMB: instance.currentSizeMB,
             sizeMB: instance.sizeMB,
             region: instance.region,
-            state: instance.state,
             serviceName: instance.service?.name || context.serviceName || 'Unknown Service',
             environmentName: instance.environment?.name || context.environmentName || 'Unknown Environment',
             projectName: context.projectName || 'Unknown Project',
             workspaceName,
-            volumeName: instance.volume?.name || context.volumeName || null
+            volumeName: context.volumeName || null
           });
         };
 
@@ -276,7 +275,7 @@ class DashboardGenerator {
                     projectName,
                     environmentName: instance?.environment?.name,
                     serviceName: instance?.service?.name,
-                    volumeName: volumeNode.name || instance?.volume?.name
+                    volumeName: volumeNode.name || null
                   });
                 }
               }
@@ -293,7 +292,7 @@ class DashboardGenerator {
                     projectName,
                     environmentName: env.name,
                     serviceName: instance?.service?.name,
-                    volumeName: instance?.volume?.name
+                    volumeName: null
                   });
                 }
               }
