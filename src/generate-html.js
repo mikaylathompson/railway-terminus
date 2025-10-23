@@ -217,29 +217,84 @@ class DashboardGenerator {
 
     // Extract compact volume data
     if (this.data.data.volumes?.me?.workspaces) {
+      const seenVolumeInstanceIds = new Set();
+
       for (const workspace of this.data.data.volumes.me.workspaces) {
+        const workspaceName = workspace.name || 'Unknown Workspace';
+
+        const addVolumeInstance = (instance, context = {}) => {
+          if (!instance) return;
+
+          const instanceId = instance.id || `${context.projectName || ''}-${context.environmentName || ''}-${context.volumeName || ''}`;
+          if (instanceId && seenVolumeInstanceIds.has(instanceId)) {
+            return;
+          }
+          if (instanceId) {
+            seenVolumeInstanceIds.add(instanceId);
+          }
+
+          volumes.push({
+            id: instance.id,
+            mountPath: instance.mountPath,
+            currentSizeMB: instance.currentSizeMB,
+            sizeMB: instance.sizeMB,
+            region: instance.region,
+            state: instance.state,
+            serviceName: instance.service?.name || context.serviceName || 'Unknown Service',
+            environmentName: instance.environment?.name || context.environmentName || 'Unknown Environment',
+            projectName: context.projectName || 'Unknown Project',
+            workspaceName,
+            volumeName: instance.volume?.name || context.volumeName || null
+          });
+        };
+
+        const projectConnections = [];
+        if (workspace.projects?.edges) {
+          projectConnections.push(workspace.projects);
+        }
         if (workspace.team?.projects?.edges) {
-        for (const projectEdge of workspace.team.projects.edges) {
-          const project = projectEdge.node;
-            if (project.environments?.edges) {
-            for (const envEdge of project.environments.edges) {
-              const env = envEdge.node;
-                if (env.volumeInstances?.edges) {
-                for (const volumeEdge of env.volumeInstances.edges) {
-                    const volume = volumeEdge.node;
-                  volumes.push({
-                      id: volume.id,
-                      mountPath: volume.mountPath,
-                      currentSizeMB: volume.currentSizeMB,
-                      sizeMB: volume.sizeMB,
-                      region: volume.region,
-                      state: volume.state,
-                      serviceName: volume.service?.name || 'Unknown Service',
-                      environmentName: env.name,
-                    projectName: project.name,
-                      workspaceName: workspace.name
+          projectConnections.push(workspace.team.projects);
+        }
+
+        for (const projectConnection of projectConnections) {
+          if (!projectConnection?.edges) continue;
+
+          for (const projectEdge of projectConnection.edges) {
+            const project = projectEdge?.node;
+            if (!project) continue;
+
+            const projectName = project.name || 'Unknown Project';
+
+            if (project.volumes?.edges?.length) {
+              for (const volumeEdge of project.volumes.edges) {
+                const volumeNode = volumeEdge?.node;
+                if (!volumeNode?.volumeInstances?.edges?.length) continue;
+
+                for (const instanceEdge of volumeNode.volumeInstances.edges) {
+                  const instance = instanceEdge?.node;
+                  addVolumeInstance(instance, {
+                    projectName,
+                    environmentName: instance?.environment?.name,
+                    serviceName: instance?.service?.name,
+                    volumeName: volumeNode.name || instance?.volume?.name
                   });
-                  }
+                }
+              }
+            }
+
+            if (project.environments?.edges?.length) {
+              for (const envEdge of project.environments.edges) {
+                const env = envEdge?.node;
+                if (!env?.volumeInstances?.edges?.length) continue;
+
+                for (const volumeEdge of env.volumeInstances.edges) {
+                  const instance = volumeEdge?.node;
+                  addVolumeInstance(instance, {
+                    projectName,
+                    environmentName: env.name,
+                    serviceName: instance?.service?.name,
+                    volumeName: instance?.volume?.name
+                  });
                 }
               }
             }
