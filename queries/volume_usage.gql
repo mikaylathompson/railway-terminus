@@ -42,7 +42,6 @@ fragment VolumeProjectFields on Project {
               mountPath
               region
               state
-              type
               createdAt
               environmentId
               serviceId
@@ -79,7 +78,6 @@ fragment VolumeProjectFields on Project {
               mountPath
               region
               state
-              type
               createdAt
               environmentId
               serviceId
