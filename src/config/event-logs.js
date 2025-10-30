@@ -1,6 +1,6 @@
 /**
  * Event Logs Configuration
- * 
+ *
  * This file contains all the configurable settings for event log display.
  * Users can easily modify these settings to customize how event logs are
  * fetched, filtered, and displayed.
@@ -17,15 +17,15 @@ module.exports = {
    * GraphQL filter string for log queries
    * Examples:
    * - "<EVENT>" - filters for event-type logs
-   * - "<DEPLOY>" - filters for deployment logs  
+   * - "<DEPLOY>" - filters for deployment logs
    * - "" - no filter (all logs)
    * - "error" - filter for logs containing "error"
    */
-  logFilter: "<EVENT>",
+  logFilter: '<EVENT>',
 
   /**
    * Display algorithm for log messages
-   * 
+   *
    * Choose one approach:
    * - 'regex': Use a regex with capturing group (set displayRegex below)
    * - 'custom': Use the customDisplayFunction below
@@ -35,10 +35,10 @@ module.exports = {
   /**
    * Regex pattern with capturing group for extracting display text
    * Only used when displayAlgorithm is 'regex'
-   * 
+   *
    * The first capturing group will be used as the display text.
    * If no match or no capturing group, falls back to truncated message.
-   * 
+   *
    * Examples:
    * - /\[([^\]]+)\]/ - Extract text between square brackets (default)
    * - /ERROR:\s*(.+)/ - Extract everything after "ERROR: "
@@ -49,7 +49,7 @@ module.exports = {
   /**
    * Custom display function
    * Only used when displayAlgorithm is set to 'custom'
-   * 
+   *
    * @param {string} message - The raw log message
    * @returns {string} - The processed message for display
    */
@@ -67,6 +67,6 @@ module.exports = {
    * Used when regex doesn't match or custom function fails
    */
   fallback: {
-    maxLength: 30
-  }
+    maxLength: 30,
+  },
 };

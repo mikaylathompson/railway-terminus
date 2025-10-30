@@ -5,7 +5,7 @@ const options = {
   port: process.env.PORT || 3000,
   path: '/health',
   method: 'GET',
-  timeout: 2000
+  timeout: 2000,
 };
 
 const req = http.request(options, (res) => {
@@ -25,4 +25,4 @@ req.on('timeout', () => {
   process.exit(1);
 });
 
-req.end(); 
+req.end();

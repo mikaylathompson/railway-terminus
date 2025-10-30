@@ -53,12 +53,18 @@ async function testIndividualQueries() {
     console.log('4. Testing event logs query...');
     try {
       const eventLogsQuery = fs.readFileSync(path.join(queriesDir, 'event_logs.gql'), 'utf8');
-      console.log(`📅 Config: max entries=${eventLogsConfig.maxLogEntries}, filter="${eventLogsConfig.logFilter}"`);
-      await client.makeGraphQLRequest(eventLogsQuery, {
-        environmentId: environmentId,
-        filter: eventLogsConfig.logFilter,
-        afterLimit: eventLogsConfig.maxLogEntries
-      }, 'Event Logs');
+      console.log(
+        `📅 Config: max entries=${eventLogsConfig.maxLogEntries}, filter="${eventLogsConfig.logFilter}"`
+      );
+      await client.makeGraphQLRequest(
+        eventLogsQuery,
+        {
+          environmentId: environmentId,
+          filter: eventLogsConfig.logFilter,
+          afterLimit: eventLogsConfig.maxLogEntries,
+        },
+        'Event Logs'
+      );
       console.log('✅ Event logs query successful\n');
     } catch (error) {
       console.error('❌ Event logs query failed:', error.message, '\n');
@@ -70,4 +76,4 @@ async function testIndividualQueries() {
   console.log('🎯 Query testing complete!');
 }
 
-module.exports = { testIndividualQueries }; 
+module.exports = { testIndividualQueries };

@@ -18,7 +18,11 @@ async function debugAdvanced() {
   // Test 1: Basic user info
   console.log('1. Testing user authentication and basic info...');
   try {
-    const userData = await client.makeGraphQLRequest('query { me { id name email } }', {}, 'User Info');
+    const userData = await client.makeGraphQLRequest(
+      'query { me { id name email } }',
+      {},
+      'User Info'
+    );
     console.log('✅ User authenticated:', userData.me.name);
     console.log('   User ID:', userData.me.id);
     console.log('   Email:', userData.me.email, '\n');
@@ -30,7 +34,8 @@ async function debugAdvanced() {
   // Test 2: List workspaces
   console.log('2. Testing workspace access...');
   try {
-    const workspaceData = await client.makeGraphQLRequest(`
+    const workspaceData = await client.makeGraphQLRequest(
+      `
       query {
         me {
           workspaces {
@@ -43,10 +48,13 @@ async function debugAdvanced() {
           }
         }
       }
-    `, {}, 'Workspaces');
-    
+    `,
+      {},
+      'Workspaces'
+    );
+
     console.log('✅ Workspaces found:', workspaceData.me.workspaces.length);
-    workspaceData.me.workspaces.forEach(ws => {
+    workspaceData.me.workspaces.forEach((ws) => {
       console.log(`   - ${ws.name} (${ws.id})`);
       if (ws.team) {
         console.log(`     Team: ${ws.team.name} (${ws.team.id})`);
@@ -60,7 +68,8 @@ async function debugAdvanced() {
   // Test 3: List projects
   console.log('3. Testing project access...');
   try {
-    const projectData = await client.makeGraphQLRequest(`
+    const projectData = await client.makeGraphQLRequest(
+      `
       query {
         me {
           workspaces {
@@ -86,18 +95,21 @@ async function debugAdvanced() {
           }
         }
       }
-    `, {}, 'Projects');
-    
+    `,
+      {},
+      'Projects'
+    );
+
     let projectCount = 0;
     let envCount = 0;
-    projectData.me.workspaces.forEach(ws => {
+    projectData.me.workspaces.forEach((ws) => {
       if (ws.team && ws.team.projects) {
-        ws.team.projects.edges.forEach(projectEdge => {
+        ws.team.projects.edges.forEach((projectEdge) => {
           const project = projectEdge.node;
           projectCount++;
           console.log(`   - Project: ${project.name} (${project.id})`);
           if (project.environments) {
-            project.environments.edges.forEach(envEdge => {
+            project.environments.edges.forEach((envEdge) => {
               const env = envEdge.node;
               envCount++;
               console.log(`     Environment: ${env.name} (${env.id})`);
@@ -145,7 +157,7 @@ async function debugAdvanced() {
             }
           }
         }
-      `
+      `,
     },
     {
       name: 'Volume with Size Info',
@@ -180,8 +192,8 @@ async function debugAdvanced() {
             }
           }
         }
-      `
-    }
+      `,
+    },
   ];
 
   for (const queryTest of volumeQueries) {
@@ -189,14 +201,14 @@ async function debugAdvanced() {
       console.log(`   Testing: ${queryTest.name}...`);
       const result = await client.makeGraphQLRequest(queryTest.query, {}, queryTest.name);
       console.log(`   ✅ ${queryTest.name} successful`);
-      
+
       // Count volumes
       let volumeCount = 0;
-      result.me.workspaces.forEach(ws => {
+      result.me.workspaces.forEach((ws) => {
         if (ws.team && ws.team.projects) {
-          ws.team.projects.edges.forEach(projectEdge => {
+          ws.team.projects.edges.forEach((projectEdge) => {
             if (projectEdge.node.environments) {
-              projectEdge.node.environments.edges.forEach(envEdge => {
+              projectEdge.node.environments.edges.forEach((envEdge) => {
                 if (envEdge.node.volumeInstances) {
                   volumeCount += envEdge.node.volumeInstances.edges.length;
                 }
@@ -230,8 +242,8 @@ async function debugAdvanced() {
         variables: {
           environmentId: environmentId,
           startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          endDate: new Date().toISOString()
-        }
+          endDate: new Date().toISOString(),
+        },
       },
       {
         name: 'Event Logs Simple',
@@ -249,17 +261,21 @@ async function debugAdvanced() {
           }
         `,
         variables: {
-          environmentId: environmentId
-        }
-      }
+          environmentId: environmentId,
+        },
+      },
     ];
 
     for (const queryTest of eventQueries) {
       try {
         console.log(`   Testing: ${queryTest.name}...`);
-        const result = await client.makeGraphQLRequest(queryTest.query, queryTest.variables, queryTest.name);
+        const result = await client.makeGraphQLRequest(
+          queryTest.query,
+          queryTest.variables,
+          queryTest.name
+        );
         console.log(`   ✅ ${queryTest.name} successful`);
-        
+
         // Count logs
         let logCount = 0;
         if (result.environmentLogs) {
@@ -287,4 +303,4 @@ async function debugAdvanced() {
   console.log('   - Try using the simple query versions as fallbacks');
 }
 
-module.exports = { debugAdvanced }; 
+module.exports = { debugAdvanced };

@@ -23,7 +23,11 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["railway", "dashboard", "monitoring"],
+  "keywords": [
+    "railway",
+    "dashboard",
+    "monitoring"
+  ],
   "author": "",
   "license": "MIT"
-} 
+}

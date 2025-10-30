@@ -15,7 +15,7 @@ A Railway-hosted dashboard for monitoring Railway services, volumes, and event l
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - Railway account with API token
 - Docker (for containerized deployment)
 
@@ -41,12 +41,14 @@ DISPLAY_TIMEZONE=UTC
 ### Local Development
 
 1. Clone and install dependencies:
+
 ```bash
 cd railway-terminus
 npm install
 ```
 
 2. Set environment variables:
+
 ```bash
 export TERMINUS_AUTH_TOKEN=your-token
 export RAILWAY_TOKEN=your-railway-token
@@ -55,6 +57,7 @@ export DISPLAY_TIMEZONE=America/New_York  # Optional: your preferred timezone
 ```
 
 3. Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -64,11 +67,13 @@ npm run dev
 ### Docker Deployment
 
 1. Build the container:
+
 ```bash
 docker build -t railway-terminus .
 ```
 
 2. Run with environment variables:
+
 ```bash
 docker run -p 3000:3000 \
   -e TERMINUS_AUTH_TOKEN=your-token \
@@ -90,9 +95,11 @@ Authorization: Bearer your-token-here
 ### Endpoints
 
 #### `GET /` - Dashboard
+
 Returns the main dashboard HTML.
 
 **Headers:**
+
 - `X-Logs-Environment-ID`: Environment ID for event logs only (preferred)
 - `X-Terminus-Logs-Env-ID`: Environment ID for event logs only (legacy)
 - `X-Project-ID`: Filter all data by specific project ID
@@ -103,7 +110,7 @@ Returns the main dashboard HTML.
 When filtering headers are provided, the dashboard will show only data for the specified resources:
 
 - **Project Filter (`X-Project-ID`)**: Shows only deployments, volumes, and services for the specified project
-- **Service Filter (`X-Service-ID`)**: Shows only deployments for the specified service (must be within the filtered project if both are specified)  
+- **Service Filter (`X-Service-ID`)**: Shows only deployments for the specified service (must be within the filtered project if both are specified)
 - **Environment Filter (`X-Environment-ID`)**: Shows only deployments and volumes for the specified environment
 - **Event Logs (`X-Terminus-Logs-Env-ID`)**: Enables event logs for the specified environment (separate from filtering)
 
@@ -112,25 +119,30 @@ Filters can be combined. For example, providing both `X-Project-ID` and `X-Servi
 **Note:** All timestamps are displayed in the timezone specified by the `DISPLAY_TIMEZONE` environment variable (defaults to UTC).
 
 #### `GET /debug` - Debug Queries
+
 Runs diagnostic queries and returns results as JSON.
 
 #### `GET /api/data` - JSON Data
+
 Returns raw dashboard data as JSON.
 
 **Headers:** Same as dashboard endpoint
 
 #### `GET /health` - Health Check
+
 Returns service health status (no authentication required).
 
 ## Usage Examples
 
 ### Basic Dashboard Access
+
 ```bash
 curl -H "Authorization: Bearer your-token" \
      http://localhost:3000/
 ```
 
 ### Custom Environment
+
 ```bash
 curl -H "Authorization: Bearer your-token" \
      -H "X-Environment-ID: env_abc123" \
@@ -138,12 +150,14 @@ curl -H "Authorization: Bearer your-token" \
 ```
 
 ### JSON Data Access
+
 ```bash
 curl -H "Authorization: Bearer your-token" \
      http://localhost:3000/api/data
 ```
 
 ### Debug Queries
+
 ```bash
 curl -H "Authorization: Bearer your-token" \
      http://localhost:3000/debug

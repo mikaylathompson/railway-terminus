@@ -7,11 +7,11 @@ async function testLocal() {
 
   // Check environment variables
   const requiredVars = ['RAILWAY_TOKEN', 'TERMINUS_AUTH_TOKEN'];
-  const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
+  const missingVars = requiredVars.filter((varName) => !process.env[varName]);
+
   if (missingVars.length > 0) {
     console.error('❌ Missing required environment variables:');
-    missingVars.forEach(varName => console.error(`   - ${varName}`));
+    missingVars.forEach((varName) => console.error(`   - ${varName}`));
     console.log('\nPlease set these variables and try again.');
     process.exit(1);
   }
@@ -23,11 +23,14 @@ async function testLocal() {
     console.log('1. Testing Railway client...');
     const client = new RailwayClient(process.env.RAILWAY_TOKEN);
     const dashboardData = await client.fetchDashboardData(process.env.RAILWAY_ENVIRONMENT_ID);
-    
+
     if (dashboardData.success) {
       console.log('✅ Railway client working - data fetched successfully');
     } else {
-      console.log('⚠️  Railway client working but API returned error:', dashboardData.error.message);
+      console.log(
+        '⚠️  Railway client working but API returned error:',
+        dashboardData.error.message
+      );
     }
 
     // Test HTML generation
@@ -35,7 +38,7 @@ async function testLocal() {
     const generator = new DashboardGenerator();
     generator.loadData(dashboardData);
     const html = generator.generateHTML();
-    
+
     if (html && html.length > 0) {
       console.log('✅ HTML generation working -', html.length, 'characters generated');
     } else {
@@ -50,8 +53,11 @@ async function testLocal() {
     console.log('\nTo start the server:');
     console.log('  npm start');
     console.log('\nTo test the API:');
-    console.log('  curl -H "Authorization: Bearer ' + process.env.TERMINUS_AUTH_TOKEN + '" http://localhost:3000/');
-
+    console.log(
+      '  curl -H "Authorization: Bearer ' +
+        process.env.TERMINUS_AUTH_TOKEN +
+        '" http://localhost:3000/'
+    );
   } catch (error) {
     console.error('❌ Test failed:', error.message);
     process.exit(1);
@@ -63,4 +69,4 @@ if (require.main === module) {
   testLocal();
 }
 
-module.exports = { testLocal }; 
+module.exports = { testLocal };
